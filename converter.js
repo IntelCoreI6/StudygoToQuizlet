@@ -1,10 +1,14 @@
 async function fetchStudygoData(url) {
     try {
         const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
         const data = await response.text();
         return data;
     } catch (error) {
         console.error('Error fetching Studygo data:', error);
+        document.getElementById('console').innerText = 'Error fetching Studygo data: ' + error.message;
         return null;
     }
 }
