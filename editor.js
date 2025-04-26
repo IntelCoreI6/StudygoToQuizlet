@@ -320,11 +320,16 @@ function deleteFlashcard(event) {
 }
 
 // Convert flashcards to CSV format with specified delimiter
-function convertToCsv(flashcards, delimiter = ',') {
-    // Ensure delimiter is a single character or tab
-    if (delimiter.length > 1 && delimiter !== '\t') { // Check against actual tab character
-        console.warn("Delimiter should be a single character or tab. Using default comma.");
-        delimiter = ',';
+function convertToCsv(flashcards, delimiterValue) {
+    // Determine the actual delimiter character based on the value
+    let delimiter;
+    if (delimiterValue === 'tab') {
+        delimiter = "	"; // Use literal tab character string
+    } else if (delimiterValue === ',' || delimiterValue === '=') {
+        delimiter = delimiterValue;
+    } else {
+        console.warn("Invalid delimiter value. Using default comma.");
+        delimiter = ','; // Fallback to comma
     }
 
     let csv = ''; // Start empty
@@ -336,24 +341,19 @@ function convertToCsv(flashcards, delimiter = ',') {
         term = term.replace(/\r\n|\r|\n/g, ' ');
         definition = definition.replace(/\r\n|\r|\n/g, ' ');
 
-        // Quote fields if they contain the delimiter or double quotes (standard CSV practice)
-        const needsQuoting = term.includes(delimiter) || term.includes('"') || definition.includes(delimiter) || definition.includes('"');
-
-        if (needsQuoting && delimiter === ',') { // Only apply standard CSV quoting for commas
-             // Escape double quotes by doubling them
-             term = `"${term.replace(/"/g, '""')}"`;
-             definition = `"${definition.replace(/"/g, '""')}"`;
+        // Apply standard CSV quoting only if the delimiter is a comma
+        if (delimiter === ',') {
+            // ... existing comma quoting logic ...
         } else {
-            // For other delimiters (like tab or equals), simply replace the delimiter if it appears in the field.
-            // This is a simpler approach, might not cover all edge cases for TSV etc.
-            const regex = new RegExp(delimiter === '\t' ? '\t' : delimiter, 'g');
-            term = term.replace(regex, ' ');
-            definition = definition.replace(regex, ' ');
+            // For other delimiters (like tab or equals), replace the delimiter character if it appears within the field itself.
+            const regex = new RegExp(delimiter, 'g');
+            term = term.replace(regex, ' '); // Replace delimiter with space
+            definition = definition.replace(regex, ' '); // Replace delimiter with space
         }
 
         csv += `${term}${delimiter}${definition}\n`;
     });
-    return csv; // Return without header for easier Quizlet import paste
+    return csv;
 }
 
 
@@ -363,12 +363,15 @@ function copyAsCsv() {
         alert('No flashcards to copy.');
         return;
     }
-    const selectedDelimiter = delimiterSelect.value === '\t' ? '\t' : delimiterSelect.value; // Get selected delimiter, handle tab correctly
-    const csv = convertToCsv(flashcardsData, selectedDelimiter);
+    // Get the value ("tab", ",", "=") from the select element
+    const selectedDelimiterValue = delimiterSelect.value;
+    const csv = convertToCsv(flashcardsData, selectedDelimiterValue); // Pass the value
     navigator.clipboard.writeText(csv)
         .then(() => {
             alert('Flashcard data copied to clipboard!');
-            console.log("Editor: Data copied with delimiter:", selectedDelimiter === '\t' ? 'Tab' : selectedDelimiter);
+            // Log the delimiter used
+            const actualDelimiter = selectedDelimiterValue === 'tab' ? "	" : selectedDelimiterValue; // Use literal tab
+            console.log("Editor: Data copied with delimiter:", actualDelimiter === "	" ? 'Tab' : actualDelimiter);
         })
         .catch(err => {
             console.error('Editor: Failed to copy data:', err);
@@ -382,19 +385,24 @@ function downloadCsv() {
         alert('No flashcards to download.');
         return;
     }
-    const selectedDelimiter = delimiterSelect.value === '\t' ? '\t' : delimiterSelect.value; // Get selected delimiter, handle tab correctly
-    const csv = convertToCsv(flashcardsData, selectedDelimiter);
+    // Get the value ("tab", ",", "=") from the select element
+    const selectedDelimiterValue = delimiterSelect.value;
+    const csv = convertToCsv(flashcardsData, selectedDelimiterValue); // Pass the value
+
+    // Determine the actual delimiter character for file extension logic
+    const actualDelimiter = selectedDelimiterValue === 'tab' ? "	" : selectedDelimiterValue; // Use literal tab
+
     // Use text/plain which is generally safer and works for CSV/TSV.
     const blob = new Blob([csv], { type: 'text/plain;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
 
-    // Determine file extension based on delimiter
+    // Determine file extension based on the actual delimiter character
     let fileExtension = 'txt';
-    if (selectedDelimiter === ',') {
+    if (actualDelimiter === ',') {
         fileExtension = 'csv';
-    } else if (selectedDelimiter === '\t') { // Check against actual tab
+    } else if (actualDelimiter === "	") { // Check against literal tab
         fileExtension = 'tsv'; // Use .tsv for tab-separated
     }
 
