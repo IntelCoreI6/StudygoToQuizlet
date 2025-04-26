@@ -22,8 +22,8 @@
   },
   "content_scripts": [
     {
-      "matches": ["*://*.studygo.com/nl/learn/lists/*"],
-      "js": ["content.js"]
+      "matches": ["*://*.studygo.com/*/learn/lists/*"],
+      "js": ["content_studygo.js"]
     }
   ],
   "icons": {

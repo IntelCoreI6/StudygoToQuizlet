@@ -1,28 +1,105 @@
+// Define supported services and their content scripts
+const supportedServices = [
+    {
+        name: "StudyGo",
+        matches: ["*://*.studygo.com/*/learn/lists/*"], // Changed /nl/ to /*/
+        script: "content_studygo.js"
+    },
+    // Add other services here later, e.g.:
+    // {
+    //     name: "Quizlet",
+    //     matches: ["*://quizlet.com/*"],
+    //     script: "content_quizlet.js"
+    // }
+];
+
 document.getElementById('extractBtn').addEventListener('click', () => {
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    // Check if the active tab is a StudyGo list page before sending the message
-    if (tabs[0] && tabs[0].url && tabs[0].url.includes('studygo.com/nl/learn/lists/')) {
-      chrome.scripting.executeScript({
-        target: { tabId: tabs[0].id },
-        files: ['content.js'] // Ensure content script is injected if not already
-      }, () => {
-        // After ensuring the script is injected, send the message
-        chrome.tabs.sendMessage(tabs[0].id, { action: "extractFlashcards" }, (response) => {
-          if (chrome.runtime.lastError) {
-            console.error("Error sending message:", chrome.runtime.lastError.message);
-            // Optionally update popup UI to show an error
-          } else if (response && response.status === "started") {
-            // Optionally update popup UI to show "Working..."
-            window.close(); // Close popup once extraction starts
-          } else {
-            // Handle cases where content script isn't ready or doesn't respond
-            console.warn("Content script did not respond as expected.");
-          }
-        });
-      });
-    } else {
-      // Optionally update popup UI to say "Not a StudyGo list page"
-      console.log("Not on a valid StudyGo list page.");
-    }
-  });
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        const currentTab = tabs[0];
+        if (!currentTab || !currentTab.url) {
+            console.error("Could not get current tab information.");
+            // Update UI: Show error
+             const statusDiv = document.getElementById('status');
+             if (statusDiv) {
+                 statusDiv.textContent = "Error getting tab info.";
+                 statusDiv.style.color = 'red';
+             }
+            return;
+        }
+
+        let matchedService = null;
+        for (const service of supportedServices) {
+            // Basic wildcard matching - convert glob to regex
+            // Escape regex special chars, then replace * with .*
+            const regexPattern = service.matches[0]
+                .replace(/[.+?^${}()|[\]\\]/g, '\\$&') // Escape regex chars
+                .replace(/\*/g, '.*'); // Replace * with .*
+            const pattern = new RegExp(regexPattern);
+
+            if (pattern.test(currentTab.url)) {
+                matchedService = service;
+                break;
+            }
+        }
+
+        if (matchedService) {
+            console.log(`Matched service: ${matchedService.name}`);
+            // Update UI: Indicate which service was matched
+            const statusDiv = document.getElementById('status');
+            if (statusDiv) {
+                statusDiv.textContent = `Extracting from ${matchedService.name}...`;
+                statusDiv.style.color = 'inherit'; // Reset color
+            }
+
+            chrome.scripting.executeScript({
+                target: { tabId: currentTab.id },
+                files: [matchedService.script]
+            }, () => {
+                if (chrome.runtime.lastError) {
+                    console.error(`Error injecting script ${matchedService.script}:`, chrome.runtime.lastError.message);
+                    // Update UI: Show injection error
+                     const statusDiv = document.getElementById('status');
+                     if (statusDiv) {
+                         statusDiv.textContent = "Error injecting script.";
+                         statusDiv.style.color = 'red';
+                     }
+                    return;
+                }
+                // After ensuring the script is injected, send the message
+                chrome.tabs.sendMessage(currentTab.id, { action: "extractFlashcards" }, (response) => {
+                    if (chrome.runtime.lastError) {
+                        console.error("Error sending message:", chrome.runtime.lastError.message);
+                        // Update UI: Show message sending error
+                         const statusDiv = document.getElementById('status');
+                         if (statusDiv) {
+                             // Don't overwrite injection error if it occurred
+                             if (!statusDiv.textContent.startsWith("Error injecting")) {
+                                 statusDiv.textContent = "Error communicating with page.";
+                                 statusDiv.style.color = 'red';
+                             }
+                         }
+                    } else if (response && response.status === "started") {
+                        console.log("Extraction started by content script.");
+                        window.close(); // Close popup once extraction starts
+                    } else {
+                        console.warn("Content script did not respond as expected or extraction failed.", response);
+                        // Update UI: Show unexpected response error
+                         const statusDiv = document.getElementById('status');
+                         if (statusDiv) {
+                             statusDiv.textContent = "Extraction failed or no response.";
+                             statusDiv.style.color = 'orange';
+                         }
+                    }
+                });
+            });
+        } else {
+            console.log("Current page is not a supported service page.");
+            // Update popup UI to indicate no supported service found
+            const statusDiv = document.getElementById('status');
+             if (statusDiv) {
+                 statusDiv.textContent = "Not a supported page.";
+                 statusDiv.style.color = 'orange';
+             }
+        }
+    });
 });
