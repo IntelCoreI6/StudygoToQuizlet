@@ -23,14 +23,17 @@
         padding: 15px;
         background-color: var(--popup-bg);
         color: var(--popup-text);
+        position: relative; /* Needed for absolute positioning of the button */
+        min-height: 100px; /* Ensure body has some height for positioning */
     }
 
     /* Style the paragraph */
     p {
         text-align: center;
-        margin-bottom: 15px; /* Increased spacing */
+        margin-bottom: 10px; /* Increased spacing */
         font-size: 14px; /* Slightly larger text */
         line-height: 1.4;
+        margin-top: 15px; /* Add top margin to push text down */
     }
     p strong { /* Optional: Emphasize the action */
         color: var(--popup-button-bg);
@@ -70,11 +73,43 @@
         font-weight: 900;
     } */
 
+    /* Style for the settings button */
+    #settingsBtn {
+        position: absolute;
+        top: 5px; /* Reduced from 8px */
+        right: 5px; /* Reduced from 8px */
+        background: none;
+        border: none;
+        padding: 4px;
+        cursor: pointer;
+        line-height: 0;
+        opacity: 0.6;
+        transition: opacity 0.2s ease-in-out;
+        width: auto; /* Override general button width */
+        margin-top: 0; /* Override general button margin */
+        display: inline-block; /* Override general button display */
+        z-index: 10; /* Ensure it's above other elements */
+    }
+    #settingsBtn:hover {
+        opacity: 1;
+    }
+    #settingsBtn svg {
+        width: 18px; /* Icon size */
+        height: 18px;
+        fill: #333; /* Icon color */
+        display: block;
+    }
+
   </style>
   <!-- Optional: Link Font Awesome if you want icons in the popup -->
   <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"> -->
 </head>
 <body>
+  <button id="settingsBtn" title="Open Settings">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+      <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.08-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.08.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/>
+    </svg>
+  </button>
   <p>Extract flashcards from the <strong>current supported page</strong>?</p> <!-- Updated text -->
   <div id="status" style="text-align: center; margin-bottom: 10px; font-size: 13px; min-height: 1.2em;"></div> <!-- Added status div -->
   <button id="extractBtn">Extract Flashcards</button>

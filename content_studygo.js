@@ -172,3 +172,141 @@ function extractFlashcardsFromPage(containerElement, itemSelector, termSelector,
         languageInfo: languageInfo
     };
 }
+
+// --- Add Quick Copy Button ---
+
+let quickCopyButtonAdded = false;
+
+function addQuickCopyButton() {
+    if (quickCopyButtonAdded) return;
+
+    const targetArea = document.querySelector('.list-header .btn-group');
+
+    if (targetArea) {
+        const buttonDiv = document.createElement('div');
+        buttonDiv.style.display = 'inline-block';
+        buttonDiv.style.marginLeft = '5px'; // Keep margin on the wrapper
+        buttonDiv.style.verticalAlign = 'middle';
+
+        const button = document.createElement('button');
+        button.id = 'quickCopyFlashcardsBtn';
+        button.textContent = 'Export to Clipboard';
+
+        // Apply new styles based on user's CSS
+        button.style.backgroundColor = '#2ecc71'; // Green color
+        button.style.border = 'none';
+        button.style.color = 'black'; // Text color
+        button.style.padding = '11px 18px'; // Further reduced padding
+        button.style.borderRadius = '50px'; // Fully rounded
+        button.style.fontSize = '15px'; // Slightly smaller font
+        button.style.fontWeight = 'bold';
+        button.style.cursor = 'pointer';
+        button.style.display = 'inline-flex'; // Use flex for alignment
+        button.style.alignItems = 'center';
+        button.style.justifyContent = 'center';
+        button.style.verticalAlign = 'middle'; // Keep vertical align on button too
+        // Removed margin-left from button itself, it's on the div
+
+        // Add hover effect
+        button.onmouseover = () => button.style.backgroundColor = '#25a857'; // Slightly darker green based on original
+        button.onmouseout = () => button.style.backgroundColor = '#29b966'; // Original green
+
+        button.addEventListener('click', handleQuickCopy);
+
+        buttonDiv.appendChild(button);
+
+        const firstElement = targetArea.firstElementChild;
+        if (firstElement) {
+            targetArea.insertBefore(buttonDiv, firstElement);
+        } else {
+            targetArea.appendChild(buttonDiv);
+        }
+
+        quickCopyButtonAdded = true;
+        console.log("StudyGo Exporter: Quick Copy button added with updated custom styles.");
+    } else {
+        console.warn("StudyGo Exporter: Could not find target button group area (.list-header .btn-group).");
+        setTimeout(addQuickCopyButton, 1000);
+    }
+}
+
+async function handleQuickCopy() {
+    const button = document.getElementById('quickCopyFlashcardsBtn');
+    const originalText = button.textContent;
+    button.textContent = 'Copying...';
+    button.disabled = true;
+
+    try {
+        // 1. Get settings
+        const settings = await chrome.storage.sync.get({ defaultCopyFormat: 'tab' });
+        const format = settings.defaultCopyFormat;
+        console.log(`StudyGo Exporter: Using format "${format}" for quick copy.`);
+
+        // 2. Extract data (reuse existing logic, but directly call it)
+        // Need to find the container again or ensure it's accessible
+        const containerSelector = '.pair-list';
+        const itemSelector = '.pair-list-item';
+        const termSelector = '.col.s-5 .info .show-on-render';
+        const defSelector = '.col.s-7 .info .show-on-render';
+        const containerElement = document.querySelector(containerSelector);
+
+        if (!containerElement) {
+            throw new Error("Flashcard container not found on page.");
+        }
+
+        const { flashcards } = extractFlashcardsFromPage(containerElement, itemSelector, termSelector, defSelector);
+
+        if (!flashcards || flashcards.length === 0) {
+            throw new Error("No flashcards found or extracted.");
+        }
+
+        // 3. Format data
+        let separator = '    '; // Default: tab
+        let itemSeparator = '\n'; // Separate cards by newline
+        if (format === 'comma') {
+            separator = ',';
+        } else if (format === 'newline') {
+            separator = '\n'; // Term and definition on separate lines
+            itemSeparator = '\n\n'; // Separate cards by double newline
+        } else if (format === 'equals') { // <-- Add this condition
+            separator = '=';
+            // Keep itemSeparator as '\n'
+        }
+        // Add more formats here if needed
+
+        const formattedText = flashcards.map(card => `${card.term}${separator}${card.definition}`).join(itemSeparator);
+
+        // 4. Copy to clipboard
+        await navigator.clipboard.writeText(formattedText);
+
+        // 5. Provide feedback
+        button.textContent = 'Copied!';
+        console.log(`StudyGo Exporter: Copied ${flashcards.length} cards to clipboard.`);
+
+    } catch (error) {
+        console.error("StudyGo Exporter: Quick Copy failed:", error);
+        button.textContent = 'Error!';
+        // Optionally show a more detailed error to the user
+        alert(`Quick Copy Error: ${error.message}`);
+    } finally {
+        // Restore button state after a short delay
+        setTimeout(() => {
+            button.textContent = originalText;
+            button.disabled = false;
+        }, 2000);
+    }
+}
+
+// --- Initialization ---
+
+// Use a MutationObserver or interval to ensure the button is added
+// even if the page loads content dynamically after the initial script run.
+// A simple interval check is often sufficient for this case.
+const initInterval = setInterval(() => {
+    // Check if the target area for the button exists
+    if (document.querySelector('.list-header .btn-group')) { // Updated check
+        addQuickCopyButton();
+    }
+    // Add a check to stop the interval after some time if the element never appears
+    // to avoid unnecessary checks indefinitely.
+}, 1000); // Check every second

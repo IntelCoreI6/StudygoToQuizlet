@@ -29,16 +29,40 @@ document.getElementById('extractBtn').addEventListener('click', () => {
 
         let matchedService = null;
         for (const service of supportedServices) {
-            // Basic wildcard matching - convert glob to regex
-            // Escape regex special chars, then replace * with .*
-            const regexPattern = service.matches[0]
-                .replace(/[.+?^${}()|[\]\\]/g, '\\$&') // Escape regex chars
-                .replace(/\*/g, '.*'); // Replace * with .*
-            const pattern = new RegExp(regexPattern);
+            // Use specific check for StudyGo, regex for others
+            if (service.name === "StudyGo" && service.matches[0] === "*://*.studygo.com/*/learn/lists/*") {
+                 // Check protocol, domain, and path segments
+                 try {
+                     const url = new URL(currentTab.url);
+                     const pathSegments = url.pathname.split('/').filter(p => p); // Get non-empty path parts
 
-            if (pattern.test(currentTab.url)) {
-                matchedService = service;
-                break;
+                     // Check: *.studygo.com, path has at least 3 parts, [1] is 'learn', [2] is 'lists'
+                     if (url.hostname.endsWith('studygo.com') &&
+                         pathSegments.length >= 3 &&
+                         pathSegments[1] === 'learn' &&
+                         pathSegments[2] === 'lists')
+                     {
+                         matchedService = service;
+                         break;
+                     }
+                 } catch (e) {
+                     console.error("Error parsing URL for matching:", e);
+                 }
+            } else {
+                 // Fallback or other services: Use the regex logic (ensure it's correct)
+                 try {
+                    const regexPattern = service.matches[0]
+                        .replace(/[.+?^${}()|[\]\\]/g, '\\$&') // Escape regex chars
+                        .replace(/\*/g, '.*'); // Replace literal * with .*
+                    const pattern = new RegExp(`^${regexPattern}$`); // Add ^ and $ for full match
+
+                    if (pattern.test(currentTab.url)) {
+                        matchedService = service;
+                        break;
+                    }
+                 } catch (e) {
+                    console.error(`Error testing regex for ${service.name}:`, e);
+                 }
             }
         }
 
@@ -102,4 +126,9 @@ document.getElementById('extractBtn').addEventListener('click', () => {
              }
         }
     });
+});
+
+// Add event listener for the settings button
+document.getElementById('settingsBtn').addEventListener('click', () => {
+    chrome.runtime.openOptionsPage();
 });
