@@ -3,16 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Studygo to Quizlet Converter</title>
+    <title>StudyGo Flashcard Converter</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="additional-styles.css">
 </head>
 <body>
-    <h1>Studygo to Quizlet Converter</h1>
-    <form id="converter-form">
-        <label for="studygo-url">Studygo URL:</label>
-        <input type="text" id="studygo-url" name="studygo-url" required>
-        <button type="button" id="convert-button">Convert</button>
-    </form>
-    <textarea id="converted-text" rows="10" cols="50" readonly></textarea>
-    <script src="converter.js"></script>
+    <div class="container">
+        <header>
+            <h1>StudyGo Flashcard Converter</h1>
+            <p>Convert StudyGo flashcards to CSV format</p>
+        </header>
+        
+        <main>
+            <section class="input-section">
+                <h2>Enter StudyGo URL</h2>
+                <div class="url-input">
+                    <input type="text" id="studygo-url" placeholder="https://studygo.com/nl/learn/lists/..." value="https://studygo.com/nl/learn/lists/181680658/gone-girl-voc">
+                    <button id="fetch-btn">Fetch Flashcards</button>
+                </div>
+                <div id="loading" class="hidden">
+                    <div class="loading-spinner"></div>
+                    <p>Loading flashcards...</p>
+                </div>
+                <div id="error-message" class="hidden error">
+                    <p>Error fetching flashcards. Please check the URL and try again.</p>
+                </div>
+            </section>
+            
+            <section class="results-section hidden" id="results-section">
+                <h2>Flashcards</h2>
+                <div class="flashcards-container">
+                    <table id="flashcards-table">
+                        <thead>
+                            <tr>
+                                <th>Term</th>
+                                <th>Definition</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="flashcards-body">
+                            <!-- Flashcards will be inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="export-options">
+                    <h3>Export Options</h3>
+                    <button id="copy-csv-btn">Copy as CSV</button>
+                    <button id="download-csv-btn">Download CSV</button>
+                </div>
+                
+                <div id="csv-preview" class="hidden">
+                    <h3>CSV Preview</h3>
+                    <pre id="csv-content"></pre>
+                </div>
+            </section>
+        </main>
+        
+        <footer>
+            <p>Created for easy flashcard conversion. Not affiliated with StudyGo.</p>
+            <p>This tool extracts publicly available flashcard data for personal use.</p>
+        </footer>
+    </div>
+    
+    <script src="script.js"></script>
 </body>
 </html>

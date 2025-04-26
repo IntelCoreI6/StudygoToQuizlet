@@ -1,0 +1,130 @@
+/* Additional styling enhancements for better user experience */
+
+/* Improve button hover effects */
+button:hover {
+    background-color: #3a5a8f;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+/* Add transition effects */
+button, input[type="text"] {
+    transition: all 0.3s ease;
+}
+
+input[type="text"]:focus {
+    border-color: #4a6fa5;
+    box-shadow: 0 0 5px rgba(74, 111, 165, 0.5);
+    outline: none;
+}
+
+/* Improve table styling */
+tr:hover {
+    background-color: #f5f8ff;
+}
+
+/* Add success message styling */
+.success {
+    color: #28a745;
+    padding: 10px;
+    background-color: #f2fff5;
+    border-radius: 4px;
+    margin-top: 10px;
+}
+
+/* Improve CSV preview */
+#csv-preview {
+    background-color: #f9f9f9;
+    padding: 15px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    overflow-x: auto;
+    max-height: 200px;
+    margin-top: 15px;
+}
+
+/* Add loading animation */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(74, 111, 165, 0.3);
+    border-radius: 50%;
+    border-top-color: #4a6fa5;
+    animation: spin 1s ease-in-out infinite;
+    margin-right: 10px;
+}
+
+/* Improve mobile responsiveness */
+@media (max-width: 480px) {
+    .container {
+        padding: 10px;
+    }
+    
+    header {
+        padding: 15px;
+    }
+    
+    h1 {
+        font-size: 24px;
+    }
+    
+    h2 {
+        font-size: 20px;
+    }
+    
+    .input-section, .results-section {
+        padding: 15px;
+    }
+    
+    th, td {
+        padding: 6px;
+        font-size: 14px;
+    }
+    
+    .edit-btn, .delete-btn {
+        padding: 4px 8px;
+        font-size: 12px;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    body {
+        background-color: #222;
+        color: #eee;
+    }
+    
+    .input-section, .results-section {
+        background-color: #333;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    
+    input[type="text"] {
+        background-color: #444;
+        color: #eee;
+        border-color: #555;
+    }
+    
+    th {
+        background-color: #444;
+    }
+    
+    th, td {
+        border-bottom: 1px solid #444;
+    }
+    
+    #csv-preview {
+        background-color: #444;
+        border-color: #555;
+    }
+    
+    tr:hover {
+        background-color: #3a4a5a;
+    }
+}
