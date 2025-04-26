@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flashcard Editor</title>
+    <link rel="stylesheet" href="editor.css">
+    <!-- Font Awesome (optional) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Flashcard Editor</h1>
+            <p>Review, edit, and export your extracted StudyGo flashcards.</p>
+            <button id="theme-toggle-btn" title="Toggle Theme">☀️</button> <!-- Theme Toggle Button -->
+        </header>
+
+        <main>
+            <div id="loading" class="hidden">Loading data...</div>
+            <div id="error-message" class="hidden error"><p></p></div>
+
+            <section class="results-section hidden" id="results-section">
+                <!-- Remove the language-info div -->
+                <!--
+                <div id="language-info" class="language-info">
+                    ... content removed ...
+                </div>
+                -->
+                <div class="card-count-container"> <!-- New container for card count -->
+                     <h3 id="card-count">Cards: <span>0</span></h3>
+                     <button id="swap-languages-btn" class="swap-btn">Swap Front/Back</button>
+                </div>
+
+                <h2>Flashcards</h2>
+                <div class="flashcards-container">
+                    <table id="flashcards-table">
+                        <thead>
+                            <tr>
+                                <th id="term-header">Term</th>
+                                <th id="definition-header">Definition</th>
+                                <!-- Remove Actions header -->
+                                <!-- <th>Actions</th> -->
+                                <th class="action-column-header"></th> <!-- Empty header for delete button column -->
+                            </tr>
+                        </thead>
+                        <tbody id="flashcards-body">
+                            <!-- Flashcards will be inserted here by editor.js -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="export-options">
+                    <h3>Export Options</h3>
+                    <button id="copy-csv-btn">Copy</button>
+                    <button id="download-csv-btn">Download</button>
+                </div>
+
+                <!-- CSV Preview is already removed -->
+            </section>
+        </main>
+
+        <footer>
+            <p>StudyGo Flashcard Exporter Extension</p>
+        </footer>
+    </div>
+
+    <script src="editor.js"></script>
+</body>
+</html>
