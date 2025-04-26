@@ -9,7 +9,7 @@ A Chrome extension to extract flashcards from StudyGo list pages and export them
     *   Enable "Developer mode" (usually a toggle in the top right).
     *   Click "Load unpacked".
     *   Select the directory containing this extension's files (the `StudygoToQuizlet` folder).
-2.  **Navigate to StudyGo:** Go to a specific flashcard list page on `studygo.com` (e.g., `https://studygo.com/nl/learn/lists/181680658/gone-girl-voc`).
+2.  **Navigate to StudyGo:** Go to a specific flashcard list page on `studygo.com` (e.g., `https://studygo.com/nl/learn/lists/167909952/example`).
 3.  **Click the Extension Icon:** Find the StudyGo Exporter icon in your Chrome toolbar (you might need to pin it) and click it.
 4.  **Extract Flashcards:** Click the "Extract Flashcards" button in the popup.
 5.  **Edit and Export:** A new tab will open (`editor.html`) displaying the extracted flashcards. Here you can:
