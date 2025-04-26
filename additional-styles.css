@@ -1,130 +1,80 @@
-/* Additional styling enhancements for better user experience */
+/* Additional styling for language headers and swap button */
 
-/* Improve button hover effects */
-button:hover {
-    background-color: #3a5a8f;
-    transform: translateY(-2px);
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-}
-
-/* Add transition effects */
-button, input[type="text"] {
-    transition: all 0.3s ease;
-}
-
-input[type="text"]:focus {
-    border-color: #4a6fa5;
-    box-shadow: 0 0 5px rgba(74, 111, 165, 0.5);
-    outline: none;
-}
-
-/* Improve table styling */
-tr:hover {
+.language-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     background-color: #f5f8ff;
-}
-
-/* Add success message styling */
-.success {
-    color: #28a745;
-    padding: 10px;
-    background-color: #f2fff5;
-    border-radius: 4px;
-    margin-top: 10px;
-}
-
-/* Improve CSV preview */
-#csv-preview {
-    background-color: #f9f9f9;
     padding: 15px;
-    border-radius: 4px;
-    border: 1px solid #ddd;
-    overflow-x: auto;
-    max-height: 200px;
-    margin-top: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
 }
 
-/* Add loading animation */
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+.language-headers {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
 }
 
-.loading-spinner {
-    display: inline-block;
-    width: 20px;
-    height: 20px;
-    border: 3px solid rgba(74, 111, 165, 0.3);
-    border-radius: 50%;
-    border-top-color: #4a6fa5;
-    animation: spin 1s ease-in-out infinite;
-    margin-right: 10px;
+.language-headers h3, .card-count h3 {
+    margin: 0;
+    font-size: 16px;
+    color: #555;
 }
 
-/* Improve mobile responsiveness */
-@media (max-width: 480px) {
-    .container {
-        padding: 10px;
-    }
-    
-    header {
-        padding: 15px;
-    }
-    
-    h1 {
-        font-size: 24px;
-    }
-    
-    h2 {
-        font-size: 20px;
-    }
-    
-    .input-section, .results-section {
-        padding: 15px;
-    }
-    
-    th, td {
-        padding: 6px;
-        font-size: 14px;
-    }
-    
-    .edit-btn, .delete-btn {
-        padding: 4px 8px;
-        font-size: 12px;
-    }
+.language-headers h3 span, .card-count h3 span {
+    font-weight: bold;
+    color: #4a6fa5;
 }
 
-/* Dark mode support */
+.swap-btn {
+    background-color: #5bc0de;
+    padding: 8px 15px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.swap-btn:hover {
+    background-color: #46b8da;
+}
+
+.swap-btn::before {
+    content: "↔";
+    font-size: 18px;
+}
+
+/* Dark mode support for language info */
 @media (prefers-color-scheme: dark) {
-    body {
-        background-color: #222;
-        color: #eee;
-    }
-    
-    .input-section, .results-section {
-        background-color: #333;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-    }
-    
-    input[type="text"] {
-        background-color: #444;
-        color: #eee;
-        border-color: #555;
-    }
-    
-    th {
-        background-color: #444;
-    }
-    
-    th, td {
-        border-bottom: 1px solid #444;
-    }
-    
-    #csv-preview {
-        background-color: #444;
-        border-color: #555;
-    }
-    
-    tr:hover {
+    .language-info {
         background-color: #3a4a5a;
+    }
+    
+    .language-headers h3, .card-count h3 {
+        color: #ddd;
+    }
+    
+    .language-headers h3 span, .card-count h3 span {
+        color: #7ab0e6;
+    }
+}
+
+/* Responsive design for language info */
+@media (max-width: 768px) {
+    .language-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .language-headers {
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .swap-btn {
+        align-self: flex-start;
     }
 }

@@ -11,9 +11,20 @@ const copyCsvButton = document.getElementById('copy-csv-btn');
 const downloadCsvButton = document.getElementById('download-csv-btn');
 const csvPreview = document.getElementById('csv-preview');
 const csvContent = document.getElementById('csv-content');
+const termLanguageElement = document.querySelector('#term-language span');
+const definitionLanguageElement = document.querySelector('#definition-language span');
+const cardCountElement = document.querySelector('#card-count span');
+const swapLanguagesButton = document.getElementById('swap-languages-btn');
+const termHeader = document.getElementById('term-header');
+const definitionHeader = document.getElementById('definition-header');
 
-// Store flashcards data
+// Store flashcards data and language information
 let flashcardsData = [];
+let languageInfo = {
+    termLanguage: 'English',
+    definitionLanguage: 'Dutch',
+    isSwapped: false
+};
 
 // Initialize the application
 function init() {
@@ -21,6 +32,7 @@ function init() {
     fetchButton.addEventListener('click', fetchFlashcards);
     copyCsvButton.addEventListener('click', copyAsCsv);
     downloadCsvButton.addEventListener('click', downloadCsv);
+    swapLanguagesButton.addEventListener('click', swapLanguages);
     
     // Check if URL is pre-filled and fetch automatically
     if (studygoUrlInput.value) {
@@ -75,8 +87,16 @@ async function fetchFlashcards() {
             throw new Error(fetchError || 'All CORS proxies failed');
         }
         
-        // Extract flashcards from HTML
-        flashcardsData = extractFlashcardsFromHtml(html);
+        // Extract flashcards and language info from HTML
+        const extractionResult = extractFlashcardsFromHtml(html, url);
+        flashcardsData = extractionResult.flashcards;
+        
+        // Update language info if available
+        if (extractionResult.languageInfo) {
+            languageInfo.termLanguage = extractionResult.languageInfo.termLanguage || 'English';
+            languageInfo.definitionLanguage = extractionResult.languageInfo.definitionLanguage || 'Dutch';
+            languageInfo.isSwapped = false;
+        }
         
         if (flashcardsData.length === 0) {
             // Check if we're running locally (file:// protocol)
@@ -91,8 +111,9 @@ async function fetchFlashcards() {
             return;
         }
         
-        // Display flashcards
+        // Display flashcards and language info
         displayFlashcards(flashcardsData);
+        updateLanguageDisplay();
         showResults();
         
     } catch (error) {
@@ -113,12 +134,65 @@ async function fetchFlashcards() {
 }
 
 // Extract flashcards from HTML content
-function extractFlashcardsFromHtml(html) {
+function extractFlashcardsFromHtml(html, url) {
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
     const flashcards = [];
+    let languageInfo = {
+        termLanguage: 'English',
+        definitionLanguage: 'Dutch'
+    };
     
-    // Try different methods to extract flashcards
+    // Try to extract the total number of flashcards from the page
+    const wordCountElements = doc.querySelectorAll('*');
+    let totalFlashcards = 0;
+    
+    for (const el of wordCountElements) {
+        const text = el.textContent.trim();
+        // Look for patterns like "25 WOORDEN" or "25 words"
+        const match = text.match(/(\d+)\s+(woorden|words)/i);
+        if (match) {
+            totalFlashcards = parseInt(match[1]);
+            console.log(`Found ${totalFlashcards} flashcards mentioned on the page`);
+            break;
+        }
+    }
+    
+    // Try to extract language information
+    const languageElements = Array.from(doc.querySelectorAll('*')).filter(el => {
+        const text = el.textContent.trim();
+        return text === 'Engels' || text === 'English' || 
+               text === 'Nederlands' || text === 'Dutch' ||
+               text === 'Français' || text === 'French' ||
+               text === 'Deutsch' || text === 'German' ||
+               text === 'Español' || text === 'Spanish';
+    });
+    
+    if (languageElements.length >= 2) {
+        // Map language text to standardized names
+        const languageMap = {
+            'Engels': 'English',
+            'English': 'English',
+            'Nederlands': 'Dutch',
+            'Dutch': 'Dutch',
+            'Français': 'French',
+            'French': 'French',
+            'Deutsch': 'German',
+            'German': 'German',
+            'Español': 'Spanish',
+            'Spanish': 'Spanish'
+        };
+        
+        // Get the first two distinct languages
+        const distinctLanguages = [...new Set(languageElements.map(el => 
+            languageMap[el.textContent.trim()] || el.textContent.trim()
+        ))];
+        
+        if (distinctLanguages.length >= 2) {
+            languageInfo.termLanguage = distinctLanguages[0];
+            languageInfo.definitionLanguage = distinctLanguages[1];
+        }
+    }
     
     // Method 1: Look for specific elements that might contain flashcard data
     // This is based on our analysis of the StudyGo page structure
@@ -127,7 +201,7 @@ function extractFlashcardsFromHtml(html) {
     // Track which rows we've processed to avoid duplicates
     const processedRows = new Set();
     
-    // First pass: Look for rows with English and Dutch text
+    // First pass: Look for rows with term and definition text
     rows.forEach(row => {
         if (processedRows.has(row)) return;
         
@@ -162,7 +236,7 @@ function extractFlashcardsFromHtml(html) {
     });
     
     // Method 2: Try to find elements with specific patterns that might be flashcards
-    if (flashcards.length === 0) {
+    if (flashcards.length === 0 || (totalFlashcards > 0 && flashcards.length < totalFlashcards)) {
         // Look for elements that might contain flashcard terms
         const potentialTerms = Array.from(doc.querySelectorAll('*')).filter(el => {
             const text = el.textContent.trim();
@@ -207,7 +281,7 @@ function extractFlashcardsFromHtml(html) {
     }
     
     // Method 3: Look for specific patterns in the HTML that might indicate flashcards
-    if (flashcards.length === 0) {
+    if (flashcards.length === 0 || (totalFlashcards > 0 && flashcards.length < totalFlashcards)) {
         // Try to find language indicators (like "Engels" and "Nederlands")
         const englishElements = Array.from(doc.querySelectorAll('*')).filter(el => 
             el.textContent.trim() === 'Engels' || el.textContent.trim() === 'English'
@@ -219,8 +293,8 @@ function extractFlashcardsFromHtml(html) {
         
         if (englishElements.length > 0 && dutchElements.length > 0) {
             // If we found language indicators, look for nearby text elements
-            const englishParent = englishElements[0].parentElement;
-            const dutchParent = dutchElements[0].parentElement;
+            const englishParent = findCommonAncestor(englishElements[0], 5);
+            const dutchParent = findCommonAncestor(dutchElements[0], 5);
             
             if (englishParent && dutchParent) {
                 // Get all text elements near the English indicator
@@ -245,24 +319,39 @@ function extractFlashcardsFromHtml(html) {
         }
     }
     
-    // Method 4: Try to extract from sample data if all else fails
-    if (flashcards.length === 0) {
-        // Sample data from the example URL
-        const sampleFlashcards = [
-            { term: "kernel", definition: "korrel" },
-            { term: "coil", definition: "kronkel" },
-            { term: "ventriloquist", definition: "buikspreker" },
-            { term: "frail", definition: "broos, zwak" },
-            { term: "to wallow in", definition: "wentelen in" },
-            { term: "to be aspired to", definition: "ambiëren, plannen hebben" },
-            { term: "a whim", definition: "een gril" },
-            { term: "kibble", definition: "brokken" },
-            { term: "to embark on", definition: "beginnen aan" }
-        ];
+    // Method 4: Look for numbered elements that might be flashcards
+    if (flashcards.length === 0 || (totalFlashcards > 0 && flashcards.length < totalFlashcards)) {
+        // Look for elements with numbers that might indicate flashcard order
+        const numberedElements = Array.from(doc.querySelectorAll('*')).filter(el => {
+            const text = el.textContent.trim();
+            // Look for elements with just numbers (like "1", "2", etc.)
+            return /^\d+$/.test(text);
+        });
         
-        // Check if the URL contains "gone-girl-voc" and use sample data
-        if (studygoUrlInput.value.includes("gone-girl-voc")) {
-            return sampleFlashcards;
+        if (numberedElements.length > 0) {
+            // Sort by numeric value
+            numberedElements.sort((a, b) => {
+                return parseInt(a.textContent.trim()) - parseInt(b.textContent.trim());
+            });
+            
+            // For each numbered element, look for nearby text that might be flashcard content
+            numberedElements.forEach(numEl => {
+                let parent = numEl.parentElement;
+                if (!parent) return;
+                
+                // Look for text elements near the number
+                const nearbyTexts = Array.from(parent.querySelectorAll('*'))
+                    .map(el => el.textContent.trim())
+                    .filter(text => text && text.length > 1 && !/^\d+$/.test(text));
+                
+                // If we found at least two text elements, assume they're a term-definition pair
+                if (nearbyTexts.length >= 2) {
+                    flashcards.push({
+                        term: nearbyTexts[0],
+                        definition: nearbyTexts[1]
+                    });
+                }
+            });
         }
     }
     
@@ -278,7 +367,54 @@ function extractFlashcardsFromHtml(html) {
         }
     });
     
-    return uniqueFlashcards;
+    return {
+        flashcards: uniqueFlashcards,
+        languageInfo: languageInfo
+    };
+}
+
+// Helper function to find a common ancestor for an element
+function findCommonAncestor(element, depth) {
+    let current = element;
+    for (let i = 0; i < depth; i++) {
+        if (!current.parentElement) break;
+        current = current.parentElement;
+    }
+    return current;
+}
+
+// Swap front and back of flashcards
+function swapLanguages() {
+    // Toggle the swapped state
+    languageInfo.isSwapped = !languageInfo.isSwapped;
+    
+    // Swap the flashcards data
+    flashcardsData = flashcardsData.map(card => ({
+        term: card.definition,
+        definition: card.term
+    }));
+    
+    // Update the display
+    updateLanguageDisplay();
+    displayFlashcards(flashcardsData);
+}
+
+// Update the language display
+function updateLanguageDisplay() {
+    if (languageInfo.isSwapped) {
+        termLanguageElement.textContent = languageInfo.definitionLanguage;
+        definitionLanguageElement.textContent = languageInfo.termLanguage;
+        termHeader.textContent = languageInfo.definitionLanguage;
+        definitionHeader.textContent = languageInfo.termLanguage;
+    } else {
+        termLanguageElement.textContent = languageInfo.termLanguage;
+        definitionLanguageElement.textContent = languageInfo.definitionLanguage;
+        termHeader.textContent = 'Term';
+        definitionHeader.textContent = 'Definition';
+    }
+    
+    // Update card count
+    cardCountElement.textContent = flashcardsData.length;
 }
 
 // Display flashcards in the table
@@ -348,6 +484,7 @@ function deleteFlashcard(event) {
         
         // Redisplay flashcards
         displayFlashcards(flashcardsData);
+        updateLanguageDisplay(); // Update card count
     }
 }
 
