@@ -6,14 +6,29 @@
     <title>StudyGo Flashcard Converter</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="additional-styles.css">
+    <!-- Add Font Awesome for cog icon (optional, can use text/emoji) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
 <body>
     <div class="container">
         <header>
             <h1>StudyGo Flashcard Converter</h1>
             <p>Convert StudyGo flashcards to CSV format</p>
+            <!-- Settings Icon -->
+            <div id="settings-icon" class="settings-icon" title="Settings">
+                <i class="fas fa-cog"></i> <!-- Font Awesome cog icon -->
+            </div>
         </header>
-        
+
+        <!-- Settings Panel (Initially Hidden) -->
+        <div id="settings-panel" class="settings-panel hidden">
+            <h3>Settings</h3>
+            <label>
+                <input type="checkbox" id="debug-mode-checkbox"> Enable Debug Mode
+            </label>
+            <p class="debug-info">When enabled, detailed logs will appear below the results.</p>
+        </div>
+
         <main>
             <section class="input-section">
                 <h2>Enter StudyGo URL</h2>
@@ -68,6 +83,12 @@
                     <h3>CSV Preview</h3>
                     <pre id="csv-content"></pre>
                 </div>
+            </section>
+
+            <!-- Debug Output Section (Initially Hidden) -->
+            <section id="debug-output-section" class="debug-output hidden">
+                <h2>Debug Log</h2>
+                <pre id="debug-log"></pre>
             </section>
         </main>
         
