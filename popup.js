@@ -14,7 +14,7 @@ const supportedServices = [
 ];
 
 document.getElementById('extractBtn').addEventListener('click', () => {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => { // Use browser.tabs.query and .then()
         const currentTab = tabs[0];
         if (!currentTab || !currentTab.url) {
             console.error("Could not get current tab information.");
@@ -75,46 +75,34 @@ document.getElementById('extractBtn').addEventListener('click', () => {
                 statusDiv.style.color = 'inherit'; // Reset color
             }
 
-            chrome.scripting.executeScript({
+            browser.scripting.executeScript({ // Use browser.scripting
                 target: { tabId: currentTab.id },
-                files: [matchedService.script]
-            }, () => {
-                if (chrome.runtime.lastError) {
-                    console.error(`Error injecting script ${matchedService.script}:`, chrome.runtime.lastError.message);
-                    // Update UI: Show injection error
+                files: ["browser-polyfill.min.js", matchedService.script] // Inject polyfill first
+            }).then(() => {
+                // Script injected successfully, now send the message
+                return browser.tabs.sendMessage(currentTab.id, { action: "extractFlashcards" }); // Use browser.tabs.sendMessage
+            }).then((response) => {
+                 // Handle response from content script
+                 if (response && response.status === "started") {
+                    console.log("Extraction started by content script.");
+                    window.close(); // Close popup once extraction starts
+                } else {
+                    console.warn("Content script did not respond as expected or extraction failed.", response);
+                    // Update UI: Show unexpected response error
                      const statusDiv = document.getElementById('status');
                      if (statusDiv) {
-                         statusDiv.textContent = "Error injecting script.";
-                         statusDiv.style.color = 'red';
+                         statusDiv.textContent = "Extraction failed or no response.";
+                         statusDiv.style.color = 'orange';
                      }
-                    return;
                 }
-                // After ensuring the script is injected, send the message
-                chrome.tabs.sendMessage(currentTab.id, { action: "extractFlashcards" }, (response) => {
-                    if (chrome.runtime.lastError) {
-                        console.error("Error sending message:", chrome.runtime.lastError.message);
-                        // Update UI: Show message sending error
-                         const statusDiv = document.getElementById('status');
-                         if (statusDiv) {
-                             // Don't overwrite injection error if it occurred
-                             if (!statusDiv.textContent.startsWith("Error injecting")) {
-                                 statusDiv.textContent = "Error communicating with page.";
-                                 statusDiv.style.color = 'red';
-                             }
-                         }
-                    } else if (response && response.status === "started") {
-                        console.log("Extraction started by content script.");
-                        window.close(); // Close popup once extraction starts
-                    } else {
-                        console.warn("Content script did not respond as expected or extraction failed.", response);
-                        // Update UI: Show unexpected response error
-                         const statusDiv = document.getElementById('status');
-                         if (statusDiv) {
-                             statusDiv.textContent = "Extraction failed or no response.";
-                             statusDiv.style.color = 'orange';
-                         }
-                    }
-                });
+            }).catch((error) => {
+                // Handle errors from either executeScript or sendMessage
+                console.error(`Error during script execution or message sending:`, error.message);
+                const statusDiv = document.getElementById('status');
+                if (statusDiv) {
+                    statusDiv.textContent = `Error: ${error.message}`; // Display a more specific error
+                    statusDiv.style.color = 'red';
+                }
             });
         } else {
             console.log("Current page is not a supported service page.");
@@ -125,10 +113,17 @@ document.getElementById('extractBtn').addEventListener('click', () => {
                  statusDiv.style.color = 'orange';
              }
         }
+    }).catch((error) => { // Catch errors from the initial tabs.query
+        console.error("Error querying tabs:", error.message);
+        const statusDiv = document.getElementById('status');
+        if (statusDiv) {
+            statusDiv.textContent = "Error getting tab info.";
+            statusDiv.style.color = 'red';
+        }
     });
 });
 
 // Add event listener for the settings button
 document.getElementById('settingsBtn').addEventListener('click', () => {
-    chrome.runtime.openOptionsPage();
+    browser.runtime.openOptionsPage(); // Use browser.runtime
 });

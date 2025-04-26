@@ -97,40 +97,41 @@ function initEditor() {
     swapLanguagesButton.addEventListener('click', swapLanguages);
     themeToggleButton.addEventListener('click', toggleTheme); // Add listener for theme toggle
 
-    // Retrieve data from chrome.storage.local
-    chrome.storage.local.get('flashcardData', (result) => {
-        showLoading(false);
-        if (chrome.runtime.lastError) {
-            console.error("Editor: Error retrieving data:", chrome.runtime.lastError);
-            showError("Error loading flashcard data. Please try extracting again.");
-            return;
-        }
+    // Retrieve data from browser.storage.local using Promises
+    browser.storage.local.get('flashcardData')
+        .then((result) => {
+            showLoading(false);
+            if (result.flashcardData && result.flashcardData.flashcards) {
+                console.log("Editor: Data loaded successfully.", result.flashcardData);
+                flashcardsData = result.flashcardData.flashcards;
+                languageInfo = { // Use defaults if not provided
+                    termLanguage: result.flashcardData.languageInfo?.termLanguage || 'Unknown',
+                    definitionLanguage: result.flashcardData.languageInfo?.definitionLanguage || 'Unknown',
+                    isSwapped: false
+                };
 
-        if (result.flashcardData && result.flashcardData.flashcards) {
-            console.log("Editor: Data loaded successfully.", result.flashcardData);
-            flashcardsData = result.flashcardData.flashcards;
-            languageInfo = { // Use defaults if not provided
-                termLanguage: result.flashcardData.languageInfo?.termLanguage || 'Unknown',
-                definitionLanguage: result.flashcardData.languageInfo?.definitionLanguage || 'Unknown',
-                isSwapped: false
-            };
+                if (flashcardsData.length > 0) {
+                    displayFlashcards(flashcardsData);
+                    updateUIDisplay(); // Use combined UI update function
+                    showResults();
+                } else {
+                    showError("No flashcards were extracted. Please go back to the StudyGo page and try again.");
+                }
 
-            if (flashcardsData.length > 0) {
-                displayFlashcards(flashcardsData);
-                updateUIDisplay(); // Use combined UI update function
-                showResults();
+                // Optional: Clear the storage after loading to prevent reuse?
+                // browser.storage.local.remove('flashcardData')
+                //  .catch(error => console.error("Editor: Error clearing storage:", error));
+
             } else {
-                showError("No flashcards were extracted. Please go back to the StudyGo page and try again.");
+                console.log("Editor: No flashcard data found in storage.");
+                showError("No flashcard data found. Please extract from a StudyGo page first.");
             }
-
-            // Optional: Clear the storage after loading to prevent reuse?
-            // chrome.storage.local.remove('flashcardData');
-
-        } else {
-            console.log("Editor: No flashcard data found in storage.");
-            showError("No flashcard data found. Please extract from a StudyGo page first.");
-        }
-    });
+        })
+        .catch((error) => {
+            showLoading(false);
+            console.error("Editor: Error retrieving data:", error);
+            showError("Error loading flashcard data. Please try extracting again.");
+        });
 }
 
 // --- Functions adapted from script.js ---

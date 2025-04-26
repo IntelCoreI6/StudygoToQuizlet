@@ -1,59 +1,70 @@
 // Content script running on studygo.com pages
 
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+browser.runtime.onMessage.addListener((request, sender, sendResponse) => { // Use browser.runtime
   if (request.action === "extractFlashcards") {
     console.log("StudyGo Exporter: Received request to extract flashcards.");
     // Start waiting for elements and then extract
-    waitForElementsAndExtract(sendResponse);
-    return true; // Indicates asynchronous response
+    // The Promise returned by waitForElementsAndExtract will be used as the response
+    return waitForElementsAndExtract(); // Return the promise directly
   }
+  // Handle other potential messages if needed
+  return false; // Indicate synchronous response or unhandled message
 });
 
-function waitForElementsAndExtract(sendResponse) {
-  const maxWaitTime = 15000; // Wait up to 15 seconds
-  const checkInterval = 500; // Check every 500ms
-  let elapsedTime = 0;
+// Modified to return a Promise
+function waitForElementsAndExtract() {
+  return new Promise((resolve, reject) => {
+    const maxWaitTime = 15000; // Wait up to 15 seconds
+    const checkInterval = 500; // Check every 500ms
+    let elapsedTime = 0;
 
-  // *** IMPORTANT: Update these selectors based on inspecting the LIVE StudyGo page ***
-  // Updated selectors based on user-provided HTML snippet:
-  const containerSelector = '.pair-list';       // The main container for the list
-  const itemSelector = '.pair-list-item';     // Selector for individual flashcard items
-  const termSelector = '.col.s-5 .info .show-on-render'; // Selector for the term within an item
-  const defSelector = '.col.s-7 .info .show-on-render';   // Selector for the definition within an item
+    // *** IMPORTANT: Update these selectors based on inspecting the LIVE StudyGo page ***
+    // Updated selectors based on user-provided HTML snippet:
+    const containerSelector = '.pair-list';       // The main container for the list
+    const itemSelector = '.pair-list-item';     // Selector for individual flashcard items
+    const termSelector = '.col.s-5 .info .show-on-render'; // Selector for the term within an item
+    const defSelector = '.col.s-7 .info .show-on-render';   // Selector for the definition within an item
 
-  const intervalId = setInterval(() => {
-    const container = document.querySelector(containerSelector);
-    const items = container ? container.querySelectorAll(itemSelector) : null;
+    const intervalId = setInterval(() => {
+      const container = document.querySelector(containerSelector);
+      const items = container ? container.querySelectorAll(itemSelector) : null;
 
-    console.log(`StudyGo Exporter: Checking for elements... Container: ${!!container}, Items: ${items ? items.length : 0}`);
+      console.log(`StudyGo Exporter: Checking for elements... Container: ${!!container}, Items: ${items ? items.length : 0}`);
 
-    if (container && items && items.length > 0) {
-      clearInterval(intervalId);
-      console.log("StudyGo Exporter: Elements found, proceeding with extraction.");
-      try {
-        const extractionResult = extractFlashcardsFromPage(container, itemSelector, termSelector, defSelector);
-        console.log(`StudyGo Exporter: Extracted ${extractionResult.flashcards.length} flashcards.`);
-
-        // Send extracted data to the background script
-        chrome.runtime.sendMessage({
-          action: "openEditor",
-          data: extractionResult
-        });
-        sendResponse({ status: "started" }); // Acknowledge the popup
-
-      } catch (error) {
-        console.error("StudyGo Exporter: Error during extraction:", error);
-        sendResponse({ status: "error", message: error.message });
-      }
-    } else {
-      elapsedTime += checkInterval;
-      if (elapsedTime >= maxWaitTime) {
+      if (container && items && items.length > 0) {
         clearInterval(intervalId);
-        console.error("StudyGo Exporter: Timeout waiting for flashcard elements to appear.");
-        sendResponse({ status: "error", message: "Could not find flashcard elements on the page. They might not have loaded correctly or the page structure has changed." });
+        console.log("StudyGo Exporter: Elements found, proceeding with extraction.");
+        try {
+          const extractionResult = extractFlashcardsFromPage(container, itemSelector, termSelector, defSelector);
+          console.log(`StudyGo Exporter: Extracted ${extractionResult.flashcards.length} flashcards.`);
+
+          // Send extracted data to the background script using Promises
+          browser.runtime.sendMessage({ // Use browser.runtime
+            action: "openEditor",
+            data: extractionResult
+          }).then(() => {
+            console.log("StudyGo Exporter: Message sent to background script.");
+            resolve({ status: "started" }); // Resolve the promise for the popup
+          }).catch(error => {
+            console.error("StudyGo Exporter: Error sending message to background:", error);
+            // Still resolve with started, as extraction happened, but log the error
+            resolve({ status: "started", warning: "Could not send data to background." });
+          });
+
+        } catch (error) {
+          console.error("StudyGo Exporter: Error during extraction:", error);
+          reject({ status: "error", message: error.message }); // Reject the promise
+        }
+      } else {
+        elapsedTime += checkInterval;
+        if (elapsedTime >= maxWaitTime) {
+          clearInterval(intervalId);
+          console.error("StudyGo Exporter: Timeout waiting for flashcard elements to appear.");
+          reject({ status: "error", message: "Could not find flashcard elements on the page. They might not have loaded correctly or the page structure has changed." }); // Reject the promise
+        }
       }
-    }
-  }, checkInterval);
+    }, checkInterval);
+  });
 }
 
 
@@ -226,9 +237,10 @@ function addQuickCopyButton() {
         console.log("StudyGo Exporter: Quick Copy button added with updated custom styles.");
     } else {
         console.warn("StudyGo Exporter: Could not find target button group area (.list-header .btn-group).");
-        setTimeout(addQuickCopyButton, 1000);
+        // No need for setTimeout here, the interval below handles retries
     }
 }
+
 
 async function handleQuickCopy() {
     const button = document.getElementById('quickCopyFlashcardsBtn');
@@ -237,13 +249,12 @@ async function handleQuickCopy() {
     button.disabled = true;
 
     try {
-        // 1. Get settings
-        const settings = await chrome.storage.sync.get({ defaultCopyFormat: 'tab' });
+        // 1. Get settings using browser.storage.sync
+        const settings = await browser.storage.sync.get({ defaultCopyFormat: 'tab' });
         const format = settings.defaultCopyFormat;
         console.log(`StudyGo Exporter: Using format "${format}" for quick copy.`);
 
-        // 2. Extract data (reuse existing logic, but directly call it)
-        // Need to find the container again or ensure it's accessible
+        // 2. Extract data (reuse existing logic)
         const containerSelector = '.pair-list';
         const itemSelector = '.pair-list-item';
         const termSelector = '.col.s-5 .info .show-on-render';
@@ -260,23 +271,21 @@ async function handleQuickCopy() {
             throw new Error("No flashcards found or extracted.");
         }
 
-        // 3. Format data
-        let separator = '    '; // Default: tab
+        // 3. Format data (remains the same)
+        let separator = '\t'; // Default: tab (use literal tab)
         let itemSeparator = '\n'; // Separate cards by newline
         if (format === 'comma') {
             separator = ',';
         } else if (format === 'newline') {
             separator = '\n'; // Term and definition on separate lines
             itemSeparator = '\n\n'; // Separate cards by double newline
-        } else if (format === 'equals') { // <-- Add this condition
+        } else if (format === 'equals') {
             separator = '=';
-            // Keep itemSeparator as '\n'
         }
-        // Add more formats here if needed
 
         const formattedText = flashcards.map(card => `${card.term}${separator}${card.definition}`).join(itemSeparator);
 
-        // 4. Copy to clipboard
+        // 4. Copy to clipboard (navigator.clipboard is standard)
         await navigator.clipboard.writeText(formattedText);
 
         // 5. Provide feedback
@@ -286,27 +295,33 @@ async function handleQuickCopy() {
     } catch (error) {
         console.error("StudyGo Exporter: Quick Copy failed:", error);
         button.textContent = 'Error!';
-        // Optionally show a more detailed error to the user
         alert(`Quick Copy Error: ${error.message}`);
     } finally {
-        // Restore button state after a short delay
+        // Restore button state
         setTimeout(() => {
-            button.textContent = originalText;
-            button.disabled = false;
+            if (document.getElementById('quickCopyFlashcardsBtn')) { // Check if button still exists
+                 button.textContent = originalText;
+                 button.disabled = false;
+            }
         }, 2000);
     }
 }
 
 // --- Initialization ---
+let initAttempts = 0;
+const maxInitAttempts = 10; // Stop checking after 10 seconds if button area not found
 
-// Use a MutationObserver or interval to ensure the button is added
-// even if the page loads content dynamically after the initial script run.
-// A simple interval check is often sufficient for this case.
 const initInterval = setInterval(() => {
-    // Check if the target area for the button exists
-    if (document.querySelector('.list-header .btn-group')) { // Updated check
-        addQuickCopyButton();
+    initAttempts++;
+    const targetArea = document.querySelector('.list-header .btn-group');
+    if (targetArea) {
+        if (!quickCopyButtonAdded) { // Only add if not already added
+             addQuickCopyButton();
+        }
+        // Optionally clear interval once button is added, though not strictly necessary
+        // clearInterval(initInterval);
+    } else if (initAttempts >= maxInitAttempts) {
+         console.warn("StudyGo Exporter: Target area for Quick Copy button not found after multiple attempts. Stopping search.");
+         clearInterval(initInterval); // Stop checking
     }
-    // Add a check to stop the interval after some time if the element never appears
-    // to avoid unnecessary checks indefinitely.
 }, 1000); // Check every second

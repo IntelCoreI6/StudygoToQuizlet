@@ -11,7 +11,9 @@
     "clipboardWrite"
   ],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "scripts": ["browser-polyfill.min.js", "background.js"],
+    "type": "module"
   },
   "action": {
     "default_popup": "popup.html",
@@ -24,7 +26,7 @@
   "content_scripts": [
     {
       "matches": ["*://*.studygo.com/*/learn/lists/*"],
-      "js": ["content_studygo.js"]
+      "js": ["browser-polyfill.min.js", "content_studygo.js"]
     }
   ],
   "icons": {
@@ -34,12 +36,18 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["editor.html"],
+      "resources": ["editor.html", "browser-polyfill.min.js"],
       "matches": ["<all_urls>"]
     }
   ],
   "options_ui": {
     "page": "options.html",
     "open_in_tab": true
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "studygo-exporter@example.com",
+      "strict_min_version": "109.0"
+    }
   }
 }
