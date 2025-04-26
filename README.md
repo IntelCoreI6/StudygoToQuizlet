@@ -42,4 +42,3 @@ A Chrome extension to extract flashcards from StudyGo list pages and export them
 
 - This extension is not affiliated with StudyGo.
 - Extraction logic in `content.js` depends heavily on the specific HTML structure of StudyGo pages. If StudyGo updates its website, the extraction might break and require updates to the selectors in `content.js`.
-- Basic icons are needed (create an `icons` folder with `icon16.png`, `icon48.png`, `icon128.png`). Placeholder icons can be used initially.
