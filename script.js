@@ -54,37 +54,68 @@ async function fetchFlashcards() {
     showLoading(true);
     hideError();
     hideResults();
+
+    // Explain the challenges of client-side fetching
+    console.log("Attempting to fetch StudyGo page using CORS proxies. Note: This method relies on third-party services and may be unreliable due to CORS restrictions, proxy availability, or dynamic content loading on StudyGo.");
     
     try {
-        // Try multiple CORS proxies in case one fails
+        // List of CORS proxies to try
+        // Note: cors-anywhere often requires activation by the user visiting its homepage.
         const corsProxies = [
             `https://corsproxy.io/?${encodeURIComponent(url)}`,
-            `https://cors-anywhere.herokuapp.com/${url}`,
             `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
+            // Add more reliable proxies here if found
         ];
         
         let html = null;
-        let fetchError = null;
+        let lastError = null; // Keep track of the last error encountered
         
-        // Try each proxy until one works
+        // Try fetching from each proxy until one succeeds
         for (const proxyUrl of corsProxies) {
+            console.log(`Trying proxy: ${proxyUrl}`);
             try {
-                const response = await fetch(proxyUrl);
+                // Add headers that might be required by some proxies or help avoid blocking
+                const response = await fetch(proxyUrl, {
+                    headers: { 
+                        'X-Requested-With': 'XMLHttpRequest' 
+                    }
+                });
                 
                 if (response.ok) {
                     html = await response.text();
+                    console.log(`Successfully fetched using: ${proxyUrl}`);
                     break; // Exit the loop if successful
+                } else {
+                    console.warn(`Proxy ${proxyUrl} failed with status: ${response.status}`);
+                    lastError = new Error(`Proxy request failed with status ${response.status}`);
                 }
             } catch (error) {
                 fetchError = error;
-                console.log(`Proxy ${proxyUrl} failed:`, error);
-                // Continue to the next proxy
+                console.warn(`Proxy ${proxyUrl} failed with error:`, error);
+                lastError = error; // Update last error
             }
         }
         
-        // If all proxies failed
+        // If all proxies failed, provide a detailed error message
         if (!html) {
-            throw new Error(fetchError || 'All CORS proxies failed');
+            let detailedError = 'Failed to fetch the StudyGo page using available CORS proxies.';
+            if (lastError) {
+                detailedError += ` Last error: ${lastError.message}.`;
+            }
+            detailedError += '\n\nThis could be due to several reasons:\n' +
+                             '1. The CORS proxies might be down, rate-limited, or blocked.\n' +
+                             '2. StudyGo might be blocking requests from these proxies or changed its structure.\n' +
+                             '3. Network connectivity issues.\n' +
+                             '4. The flashcards might be loaded dynamically after the initial page load, which this tool cannot capture directly.\n\n' +
+                             'Fetching external websites directly from a browser (like on GitHub Pages) is restricted by security policies (CORS). Using a dedicated server or serverless function as a proxy is a more reliable approach, but beyond the scope of this client-side tool.';
+
+            // Add specific advice based on context
+            if (window.location.protocol === 'file:') {
+                 detailedError += '\n\nRunning locally? Try using a local server (e.g., `python -m http.server`) or a browser extension that handles CORS (use with caution).';
+            } else {
+                 detailedError += '\n\nConsider trying again later, checking the StudyGo URL, or verifying if the page content loads dynamically.';
+            }
+            throw new Error(detailedError); // Throw a new error with the detailed message
         }
         
         // Extract flashcards and language info from HTML
@@ -99,14 +130,14 @@ async function fetchFlashcards() {
         }
         
         if (flashcardsData.length === 0) {
-            // Check if we're running locally (file:// protocol)
+            // Keep the existing check for empty results, but the fetch error is handled above
             if (window.location.protocol === 'file:') {
                 showError('No flashcards found. This may be due to CORS restrictions when running locally. Try one of these solutions:\n\n' +
                           '1. Upload to GitHub Pages (recommended)\n' +
                           '2. Use a local server (e.g., python -m http.server)\n' +
                           '3. Install a CORS browser extension');
             } else {
-                showError('No flashcards found on this page. Please check the URL and try again.');
+                showError('No flashcards found on this page. This might happen if the content is loaded dynamically after the page loads, or if the page structure has changed. Please check the URL and try again.');
             }
             return;
         }
@@ -117,17 +148,10 @@ async function fetchFlashcards() {
         showResults();
         
     } catch (error) {
-        console.error('Error fetching flashcards:', error);
-        
-        // Check if we're running locally (file:// protocol)
-        if (window.location.protocol === 'file:') {
-            showError('Error fetching flashcards. This is likely due to CORS restrictions when running locally. Try one of these solutions:\n\n' +
-                      '1. Upload to GitHub Pages (recommended)\n' +
-                      '2. Use a local server (e.g., python -m http.server)\n' +
-                      '3. Install a CORS browser extension');
-        } else {
-            showError('Error fetching flashcards. Please check the URL and try again.');
-        }
+        console.error('Error in fetchFlashcards:', error);
+        // Display the potentially detailed error message from the fetch block or other errors
+        showError(error.message || 'An unexpected error occurred during fetching or processing.');
+
     } finally {
         showLoading(false);
     }
