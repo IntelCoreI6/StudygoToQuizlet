@@ -48,18 +48,23 @@
 
 /* Settings Icon */
 .settings-icon {
-    position: absolute;
-    top: 20px; /* Adjust positioning as needed */
-    right: 25px;
+    position: fixed; /* Changed from absolute to fixed */
+    top: 15px;       /* Distance from top */
+    right: 20px;      /* Distance from right */
     font-size: 24px;
-    color: white;
+    color: #4a6fa5; /* Changed color for visibility on light background */
+    background-color: rgba(255, 255, 255, 0.8); /* Optional: Add background for better visibility */
+    padding: 5px 8px;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
     cursor: pointer;
-    transition: transform 0.3s ease;
-    z-index: 10; /* Ensure it's clickable */
+    transition: transform 0.3s ease, background-color 0.3s ease;
+    z-index: 1000; /* Ensure it's above other content */
 }
 
 .settings-icon:hover {
     transform: rotate(90deg);
+    background-color: rgba(255, 255, 255, 1);
 }
 
 /* Settings Panel */
@@ -67,7 +72,7 @@
     background-color: #eef2f7; /* Light background */
     padding: 15px 20px;
     border-radius: 8px;
-    margin: -15px 0 20px 0; /* Adjust positioning relative to header */
+    margin: 10px 0 20px 0; /* Adjust positioning relative to header */
     border: 1px solid #ccc;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
