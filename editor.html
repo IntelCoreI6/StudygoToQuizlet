@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="editor.css">
     <!-- Font Awesome (optional) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Remove Flag Icons CSS -->
+    <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/7.2.1/css/flag-icons.min.css" ... > -->
 </head>
 <body>
     <div class="container">
@@ -37,10 +39,15 @@
                     <table id="flashcards-table">
                         <thead>
                             <tr>
-                                <th id="term-header">Term</th>
-                                <th id="definition-header">Definition</th>
-                                <!-- Remove Actions header -->
-                                <!-- <th>Actions</th> -->
+                                <!-- Update headers to use img tags -->
+                                <th id="term-header">
+                                    <img src="" alt="Term language flag" class="language-flag" width="20"> <!-- Adjusted width -->
+                                    <span class="lang-name">Term</span>
+                                </th>
+                                <th id="definition-header">
+                                    <img src="" alt="Definition language flag" class="language-flag" width="20"> <!-- Adjusted width -->
+                                    <span class="lang-name">Definition</span>
+                                </th>
                                 <th class="action-column-header"></th> <!-- Empty header for delete button column -->
                             </tr>
                         </thead>
@@ -52,6 +59,15 @@
 
                 <div class="export-options">
                     <h3>Export Options</h3>
+                    <div class="delimiter-selector">
+                        <label for="delimiter">Separator:</label>
+                        <select id="delimiter">
+                            <option value="," selected>Comma (,)</option>
+                            <option value="\t">Tab (⇥)</option>
+                            <option value="=">Equals (=)</option>
+                            <!-- Add other delimiters if needed -->
+                        </select>
+                    </div>
                     <button id="copy-csv-btn">Copy</button>
                     <button id="download-csv-btn">Download</button>
                 </div>
@@ -61,7 +77,7 @@
         </main>
 
         <footer>
-            <p>StudyGo Flashcard Exporter Extension</p>
+            <p>Made with ❤️ by <a href="https://github.com/IntelCoreI6" target="_blank">IntelCoreI6</a>, from Belgium.</p>
         </footer>
     </div>
 

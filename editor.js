@@ -15,6 +15,7 @@ const swapLanguagesButton = document.getElementById('swap-languages-btn');
 const termHeader = document.getElementById('term-header');
 const definitionHeader = document.getElementById('definition-header');
 const themeToggleButton = document.getElementById('theme-toggle-btn'); // Theme toggle button
+const delimiterSelect = document.getElementById('delimiter'); // Delimiter select element
 
 // Language to Flag mapping (Using standard emoji characters)
 const languageFlags = {
@@ -27,6 +28,22 @@ const languageFlags = {
     'Portuguese': '🇵🇹', 'Português': '🇵🇹',
     // Add more languages and flags as needed
     'Unknown': '❓'
+};
+
+// Language Name to flagcdn Country Code Mapping
+// Note: flagcdn uses ISO 3166-1 alpha-2 codes
+const languageToCountryCode = {
+    'English': 'gb', 'Engels': 'gb',
+    'Dutch': 'nl', 'Nederlands': 'nl',
+    'French': 'fr', 'Français': 'fr',
+    'German': 'de', 'Deutsch': 'de',
+    'Spanish': 'es', 'Español': 'es',
+    'Italian': 'it', 'Italiano': 'it',
+    'Portuguese': 'pt', 'Português': 'pt',
+    'Latin': 'va', // Vatican City for Latin (closest representation)
+    'Greek': 'gr',
+    // Add more mappings as needed
+    'Unknown': '' // No code for unknown
 };
 
 // Store flashcards data and language information
@@ -135,18 +152,29 @@ function swapLanguages() {
     console.log("Editor: Languages swapped.");
 }
 
-// Update the UI elements (headers, card count)
+// Update the UI elements (headers, card count, flags)
 function updateUIDisplay() {
-    // No longer need to check isSwapped here as we swap the languageInfo properties directly
     const termLang = languageInfo.termLanguage;
     const defLang = languageInfo.definitionLanguage;
 
-    const termFlag = languageFlags[termLang] || languageFlags['Unknown'];
-    const defFlag = languageFlags[defLang] || languageFlags['Unknown'];
+    const termCode = languageToCountryCode[termLang] || '';
+    const defCode = languageToCountryCode[defLang] || '';
 
-    // Update table headers
-    termHeader.textContent = `${termFlag} ${termLang !== 'Unknown' ? termLang : 'Term'}`;
-    definitionHeader.textContent = `${defFlag} ${defLang !== 'Unknown' ? defLang : 'Definition'}`;
+    // Update term header
+    const termFlagImg = termHeader.querySelector('.language-flag');
+    const termNameSpan = termHeader.querySelector('.lang-name');
+    termFlagImg.src = termCode ? `https://flagcdn.com/${termCode}.svg` : ''; // Set src URL
+    termFlagImg.alt = termCode ? `${termLang} flag` : 'No flag';
+    termFlagImg.style.display = termCode ? 'inline-block' : 'none'; // Hide if no code
+    termNameSpan.textContent = termLang !== 'Unknown' ? termLang : 'Term';
+
+    // Update definition header
+    const defFlagImg = definitionHeader.querySelector('.language-flag');
+    const defNameSpan = definitionHeader.querySelector('.lang-name');
+    defFlagImg.src = defCode ? `https://flagcdn.com/${defCode}.svg` : ''; // Set src URL
+    defFlagImg.alt = defCode ? `${defLang} flag` : 'No flag';
+    defFlagImg.style.display = defCode ? 'inline-block' : 'none'; // Hide if no code
+    defNameSpan.textContent = defLang !== 'Unknown' ? defLang : 'Definition';
 
     // Update card count
     cardCountElement.textContent = flashcardsData.length;
@@ -291,47 +319,92 @@ function deleteFlashcard(event) {
     // }
 }
 
-// Convert flashcards to CSV format
-function convertToCsv(flashcards) {
-    let csv = 'Term,Definition\n'; // Header row
+// Convert flashcards to CSV format with specified delimiter
+function convertToCsv(flashcards, delimiter = ',') {
+    // Ensure delimiter is a single character or tab
+    if (delimiter.length > 1 && delimiter !== '\t') { // Check against actual tab character
+        console.warn("Delimiter should be a single character or tab. Using default comma.");
+        delimiter = ',';
+    }
+
+    let csv = ''; // Start empty
     flashcards.forEach(card => {
-        const term = `"${(card.term || '').replace(/"/g, '""')}"`; // Handle null/undefined and escape quotes
-        const definition = `"${(card.definition || '').replace(/"/g, '""')}"`;
-        csv += `${term},${definition}\n`;
+        let term = card.term || '';
+        let definition = card.definition || '';
+
+        // Basic escaping: Replace newlines with spaces.
+        term = term.replace(/\r\n|\r|\n/g, ' ');
+        definition = definition.replace(/\r\n|\r|\n/g, ' ');
+
+        // Quote fields if they contain the delimiter or double quotes (standard CSV practice)
+        const needsQuoting = term.includes(delimiter) || term.includes('"') || definition.includes(delimiter) || definition.includes('"');
+
+        if (needsQuoting && delimiter === ',') { // Only apply standard CSV quoting for commas
+             // Escape double quotes by doubling them
+             term = `"${term.replace(/"/g, '""')}"`;
+             definition = `"${definition.replace(/"/g, '""')}"`;
+        } else {
+            // For other delimiters (like tab or equals), simply replace the delimiter if it appears in the field.
+            // This is a simpler approach, might not cover all edge cases for TSV etc.
+            const regex = new RegExp(delimiter === '\t' ? '\t' : delimiter, 'g');
+            term = term.replace(regex, ' ');
+            definition = definition.replace(regex, ' ');
+        }
+
+        csv += `${term}${delimiter}${definition}\n`;
     });
-    return csv;
+    return csv; // Return without header for easier Quizlet import paste
 }
+
 
 // Copy CSV to clipboard
 function copyAsCsv() {
-    if (flashcardsData.length === 0) return;
-    const csv = convertToCsv(flashcardsData);
+    if (flashcardsData.length === 0) {
+        alert('No flashcards to copy.');
+        return;
+    }
+    const selectedDelimiter = delimiterSelect.value === '\t' ? '\t' : delimiterSelect.value; // Get selected delimiter, handle tab correctly
+    const csv = convertToCsv(flashcardsData, selectedDelimiter);
     navigator.clipboard.writeText(csv)
         .then(() => {
-            alert('CSV copied to clipboard!');
-            console.log("Editor: CSV copied.");
+            alert('Flashcard data copied to clipboard!');
+            console.log("Editor: Data copied with delimiter:", selectedDelimiter === '\t' ? 'Tab' : selectedDelimiter);
         })
         .catch(err => {
-            console.error('Editor: Failed to copy CSV:', err);
-            alert('Failed to copy CSV. Please try again or use the download option.');
+            console.error('Editor: Failed to copy data:', err);
+            alert('Failed to copy data. Please try again or use the download option.');
         });
 }
 
 // Download CSV file
 function downloadCsv() {
-    if (flashcardsData.length === 0) return;
-    const csv = convertToCsv(flashcardsData);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    if (flashcardsData.length === 0) {
+        alert('No flashcards to download.');
+        return;
+    }
+    const selectedDelimiter = delimiterSelect.value === '\t' ? '\t' : delimiterSelect.value; // Get selected delimiter, handle tab correctly
+    const csv = convertToCsv(flashcardsData, selectedDelimiter);
+    // Use text/plain which is generally safer and works for CSV/TSV.
+    const blob = new Blob([csv], { type: 'text/plain;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', 'studygo_flashcards.csv');
+
+    // Determine file extension based on delimiter
+    let fileExtension = 'txt';
+    if (selectedDelimiter === ',') {
+        fileExtension = 'csv';
+    } else if (selectedDelimiter === '\t') { // Check against actual tab
+        fileExtension = 'tsv'; // Use .tsv for tab-separated
+    }
+
+    link.setAttribute('download', `studygo_flashcards.${fileExtension}`);
     link.style.display = 'none';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url); // Clean up blob URL
-    console.log("Editor: CSV download initiated.");
+    console.log("Editor: Data download initiated as", `studygo_flashcards.${fileExtension}`);
 }
 
 // Helper functions for UI state
