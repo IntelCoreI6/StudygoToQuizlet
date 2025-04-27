@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "StudyGo Flashcard Exporter",
-  "version": "2.0",
+  "name": "StudyGo Flashcard Exporter Chrome edition",
+  "version": "2.1",
   "description": "Extracts flashcards from a StudyGo page and allows editing/exporting to CSV.",
   "permissions": [
     "activeTab",
