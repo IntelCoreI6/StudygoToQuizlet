@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "StudyGo Flashcard Exporter",
+  "name": "StudyGo Flashcard Exporter Firefox edition",
   "version": "2.0",
   "description": "Extracts flashcards from a StudyGo page and allows editing/exporting to CSV.",
   "permissions": [
